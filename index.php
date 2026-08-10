@@ -78,8 +78,8 @@ if (
         ($basic_pay * $hra_percent) / 100;
 
     $total_payment =
-          $Baic_Pay 
-		+ $da_amount
+		 $Basic_pay
+        +$da_amount
         + $hra_amount
         - $pf_deduction
         + $other_allowance;
@@ -206,13 +206,13 @@ if (isset($_GET["edit"])) {
         $sql =
             "SELECT * FROM employee WHERE id = $id";
 
-        $result =
+        $edit_result =
             mysqli_query($conn, $sql);
 
-        if ($result) {
+        if ($edit_result) {
 
             $edit =
-                mysqli_fetch_assoc($result);
+                mysqli_fetch_assoc($edit_result);
         }
     }
 }
@@ -220,354 +220,153 @@ if (isset($_GET["edit"])) {
 
 /*
 =========================================================
-WEB PAGE SEARCH
+SQL SELECT SEARCH
 =========================================================
 
-Supported commands:
+The search box accepts MySQL SELECT commands.
 
-all
+Examples:
 
-name=Ravi
+SELECT * FROM employee WHERE id = 1;
 
-name="Ravi Mahajan"
+SELECT * FROM employee
+WHERE Employee_name LIKE '%Ravi%';
 
-id=5
+SELECT * FROM employee
+WHERE id BETWEEN 1 AND 10;
 
-id=1-10
+SELECT * FROM employee
+WHERE BASIC_PAY > 30000
+ORDER BY BASIC_PAY DESC;
 
-basic_pay>30000
-
-basic_pay=30000-50000
-
-da_percent>=50
-
-hra_percent<30
-
-pf_deduction>2000
-
-other_allowance=5000
-
-total_payment>40000
-
-Multiple conditions:
-
-name=Ravi AND basic_pay>30000
-
-basic_pay=30000-50000 AND da_percent>=50
+Only SELECT statements are permitted.
 
 =========================================================
 */
 
-
-$search = "";
-
-$search_message = "";
+$search_sql = "";
 
 $search_result = NULL;
+
+$search_error = "";
 
 $search_count = 0;
 
 
-if (isset($_GET["search"])) {
+if (
+    isset($_GET["search"])
+) {
 
-    $search =
+    $search_sql =
         trim($_GET["search"]);
 
 
-    if ($search != "") {
+    if ($search_sql !== "") {
 
         /*
         -------------------------------------------------
-        ALL RECORDS
+        REMOVE ONE OPTIONAL SEMICOLON AT END
         -------------------------------------------------
         */
 
-        if (strtolower($search) == "all") {
+        $search_sql =
+            rtrim($search_sql);
 
-            $search_sql =
-                "SELECT * FROM employee
-                 ORDER BY id DESC";
+        $search_sql =
+            rtrim($search_sql, ";");
+
+        $search_sql =
+            trim($search_sql);
+
+
+        /*
+        -------------------------------------------------
+        CHECK THAT COMMAND STARTS WITH SELECT
+        -------------------------------------------------
+        */
+
+        if (
+            !preg_match(
+                '/^SELECT\s/i',
+                $search_sql
+            )
+        ) {
+
+            $search_error =
+                "Only SELECT statements are allowed.";
+
+        }
+
+
+        /*
+        -------------------------------------------------
+        BLOCK DANGEROUS SQL KEYWORDS
+        -------------------------------------------------
+        */
+
+        elseif (
+            preg_match(
+                '/\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|RENAME|REPLACE|GRANT|REVOKE|CALL|LOAD|SET|USE)\b/i',
+                $search_sql
+            )
+        ) {
+
+            $search_error =
+                "Only SELECT statements are allowed. "
+                . "INSERT, UPDATE, DELETE, DROP, ALTER, "
+                . "TRUNCATE and other modification commands "
+                . "are not permitted.";
+
+        }
+
+
+        /*
+        -------------------------------------------------
+        BLOCK MULTIPLE SQL STATEMENTS
+        -------------------------------------------------
+        */
+
+        elseif (
+            strpos(
+                $search_sql,
+                ";"
+            ) !== false
+        ) {
+
+            $search_error =
+                "Please enter only one SELECT statement.";
+
+        }
+
+
+        /*
+        -------------------------------------------------
+        EXECUTE SELECT
+        -------------------------------------------------
+        */
+
+        else {
 
             $search_result =
                 mysqli_query(
                     $conn,
                     $search_sql
                 );
-        }
 
 
-        /*
-        -------------------------------------------------
-        SEARCH CONDITIONS
-        -------------------------------------------------
-        */
+            if (!$search_result) {
 
-        else {
+                $search_error =
+                    "SQL Error: "
+                    . mysqli_error($conn);
 
-            /*
-            Split conditions using AND
-            */
+            } else {
 
-            $conditions =
-                preg_split(
-                    '/\s+AND\s+/i',
-                    $search
-                );
-
-
-            $where = array();
-
-
-            foreach ($conditions as $condition) {
-
-                $condition =
-                    trim($condition);
-
-
-                /*
-                -----------------------------------------
-                NAME SEARCH
-                -----------------------------------------
-                */
-
-                if (
-                    preg_match(
-                        '/^name\s*=\s*"([^"]+)"$/i',
-                        $condition,
-                        $m
-                    )
-                ) {
-
-                    $value =
-                        mysqli_real_escape_string(
-                            $conn,
-                            $m[1]
-                        );
-
-                    $where[] =
-                        "Employee_name = '$value'";
-                }
-
-
-                elseif (
-                    preg_match(
-                        '/^name\s*=\s*(.+)$/i',
-                        $condition,
-                        $m
-                    )
-                ) {
-
-                    $value =
-                        mysqli_real_escape_string(
-                            $conn,
-                            trim($m[1])
-                        );
-
-                    $where[] =
-                        "Employee_name LIKE '%$value%'";
-                }
-
-
-                /*
-                -----------------------------------------
-                NUMERIC FIELDS
-                -----------------------------------------
-                */
-
-                else {
-
-                    $field = "";
-
-                    $allowed_fields = array(
-
-                        "id" =>
-                            "id",
-
-                        "basic_pay" =>
-                            "BASIC_PAY",
-
-                        "da_percent" =>
-                            "DA_PERCENT",
-
-                        "da_amount" =>
-                            "DA_AMOUNT",
-
-                        "hra_percent" =>
-                            "HRA_PERCENT",
-
-                        "hra_amount" =>
-                            "HRA_AMOUNT",
-
-                        "pf_deduction" =>
-                            "PF_DEDUCTION",
-
-                        "other_allowance" =>
-                            "ANY_OTHER_ALLOWANCE",
-
-                        "total_payment" =>
-                            "TOTAL_PAYMENT"
+                $search_count =
+                    mysqli_num_rows(
+                        $search_result
                     );
-
-
-                    /*
-                    -------------------------------------
-                    RANGE SEARCH
-                    Example:
-
-                    id=1-10
-
-                    basic_pay=30000-50000
-                    -------------------------------------
-                    */
-
-                    if (
-                        preg_match(
-                            '/^([a-z_]+)\s*=\s*(-?[0-9.]+)\s*-\s*(-?[0-9.]+)$/i',
-                            $condition,
-                            $m
-                        )
-                    ) {
-
-                        $key =
-                            strtolower($m[1]);
-
-                        $value1 =
-                            floatval($m[2]);
-
-                        $value2 =
-                            floatval($m[3]);
-
-
-                        if (
-                            isset(
-                                $allowed_fields[$key]
-                            )
-                        ) {
-
-                            $field =
-                                $allowed_fields[$key];
-
-                            $where[] =
-                                "$field BETWEEN $value1 AND $value2";
-                        }
-                    }
-
-
-                    /*
-                    -------------------------------------
-                    COMPARISON
-
-                    > >= < <= =
-                    -------------------------------------
-                    */
-
-                    elseif (
-                        preg_match(
-                            '/^([a-z_]+)\s*(>=|<=|>|<|=)\s*(-?[0-9.]+)$/i',
-                            $condition,
-                            $m
-                        )
-                    ) {
-
-                        $key =
-                            strtolower($m[1]);
-
-                        $operator =
-                            $m[2];
-
-                        $value =
-                            floatval($m[3]);
-
-
-                        if (
-                            isset(
-                                $allowed_fields[$key]
-                            )
-                        ) {
-
-                            $field =
-                                $allowed_fields[$key];
-
-                            $where[] =
-                                "$field $operator $value";
-                        }
-                    }
-
-
-                    else {
-
-                        $search_message =
-                            "Invalid search command: "
-                            . htmlspecialchars(
-                                $condition
-                            );
-                    }
-                }
             }
-
-
-            /*
-            ---------------------------------------------
-            RUN SEARCH
-            ---------------------------------------------
-            */
-
-            if (
-                count($where) > 0
-                &&
-                $search_message == ""
-            ) {
-
-                $search_sql = "
-
-                SELECT *
-                FROM employee
-
-                WHERE "
-                . implode(
-                    " AND ",
-                    $where
-                )
-                . "
-
-                ORDER BY id DESC
-
-                ";
-
-
-                $search_result =
-                    mysqli_query(
-                        $conn,
-                        $search_sql
-                    );
-
-
-                if (!$search_result) {
-
-                    $search_message =
-                        "Search error: "
-                        . mysqli_error($conn);
-                }
-            }
-        }
-
-
-        /*
-        -------------------------------------------------
-        COUNT SEARCH RESULTS
-        -------------------------------------------------
-        */
-
-        if (
-            $search_result
-            &&
-            $search_message == ""
-        ) {
-
-            $search_count =
-                mysqli_num_rows(
-                    $search_result
-                );
         }
     }
 }
@@ -625,7 +424,7 @@ body {
 
     width: 95%;
 
-    max-width: 1350px;
+    max-width: 1400px;
 
     margin: 30px auto;
 }
@@ -638,6 +437,12 @@ h1 {
     color: #1d3557;
 
     margin-bottom: 25px;
+}
+
+
+h2 {
+
+    color: #1d3557;
 }
 
 
@@ -655,6 +460,132 @@ h1 {
         0 3px 10px rgba(0,0,0,0.12);
 }
 
+
+/*
+=========================================================
+SEARCH
+=========================================================
+*/
+
+.search-box {
+
+    width: 100%;
+}
+
+
+.search-box textarea {
+
+    width: 100%;
+
+    min-height: 90px;
+
+    padding: 12px;
+
+    border: 1px solid #999;
+
+    border-radius: 6px;
+
+    font-family: Consolas, monospace;
+
+    font-size: 15px;
+
+    resize: vertical;
+}
+
+
+.search-buttons {
+
+    margin-top: 10px;
+
+    display: flex;
+
+    gap: 10px;
+
+    flex-wrap: wrap;
+}
+
+
+.search-button {
+
+    background: #6f42c1;
+
+    color: white;
+}
+
+
+.clear-button {
+
+    background: #6c757d;
+
+    color: white;
+}
+
+
+.search-info {
+
+    background: #e7f1ff;
+
+    padding: 12px;
+
+    margin-top: 15px;
+
+    margin-bottom: 15px;
+
+    border-radius: 5px;
+
+    color: #084298;
+}
+
+
+.search-error {
+
+    background: #f8d7da;
+
+    color: #842029;
+
+    padding: 12px;
+
+    margin-top: 15px;
+
+    margin-bottom: 15px;
+
+    border-radius: 5px;
+
+    font-weight: bold;
+}
+
+
+.search-help {
+
+    background: #fff3cd;
+
+    padding: 15px;
+
+    margin-top: 15px;
+
+    border-radius: 5px;
+
+    line-height: 1.7;
+}
+
+
+.search-help code {
+
+    background: #eee;
+
+    padding: 3px 6px;
+
+    border-radius: 4px;
+
+    font-family: Consolas, monospace;
+}
+
+
+/*
+=========================================================
+FORM
+=========================================================
+*/
 
 .form-grid {
 
@@ -750,22 +681,6 @@ button,
 }
 
 
-.search-button {
-
-    background: #6f42c1;
-
-    color: white;
-}
-
-
-.clear-button {
-
-    background: #6c757d;
-
-    color: white;
-}
-
-
 .table-container {
 
     overflow-x: auto;
@@ -845,55 +760,6 @@ tr:nth-child(even) {
 }
 
 
-.search-info {
-
-    background: #e7f1ff;
-
-    padding: 12px;
-
-    margin-bottom: 15px;
-
-    border-radius: 5px;
-
-    color: #084298;
-
-}
-
-
-.search-error {
-
-    background: #f8d7da;
-
-    color: #842029;
-
-    padding: 12px;
-
-    margin-bottom: 15px;
-
-    border-radius: 5px;
-}
-
-
-.search-box {
-
-    display: flex;
-
-    gap: 10px;
-
-    flex-wrap: wrap;
-
-    align-items: center;
-}
-
-
-.search-box input {
-
-    flex: 1;
-
-    min-width: 300px;
-}
-
-
 .action-cell {
 
     white-space: nowrap;
@@ -903,26 +769,6 @@ tr:nth-child(even) {
 .delete-form {
 
     display: inline;
-}
-
-
-.examples {
-
-    margin-top: 15px;
-
-    line-height: 1.8;
-
-    font-size: 14px;
-}
-
-
-code {
-
-    background: #eee;
-
-    padding: 3px 6px;
-
-    border-radius: 4px;
 }
 
 </style>
@@ -941,6 +787,12 @@ code {
 
 <?php
 
+/*
+=========================================================
+MESSAGE
+=========================================================
+*/
+
 if ($message != "") {
 
     echo '<div class="message">';
@@ -954,14 +806,16 @@ if ($message != "") {
 
 
 <!-- =====================================================
-     SEARCH SECTION
+     SQL SELECT SEARCH
 ====================================================== -->
-
 
 <div class="card">
 
 
-<h2>Search Employee</h2>
+<h2>SQL SELECT Search</h2>
+
+
+<div class="search-box">
 
 
 <form
@@ -970,24 +824,20 @@ if ($message != "") {
 >
 
 
-<div class="search-box">
-
-
-<input
-    type="text"
+<textarea
     name="search"
+    placeholder="Enter MySQL SELECT command here, for example: SELECT * FROM employee WHERE id = 1;"
+><?php
 
-    placeholder='Enter command e.g. name=Ravi, id=1-10, basic_pay>30000'
+echo htmlspecialchars(
+    $search_sql,
+    ENT_QUOTES
+);
 
-    value="<?php
+?></textarea>
 
-        echo htmlspecialchars(
-            $search,
-            ENT_QUOTES
-        );
 
-    ?>"
->
+<div class="search-buttons">
 
 
 <button
@@ -1016,100 +866,110 @@ Show All
 </form>
 
 
-<div class="examples">
-
-<strong>Search examples:</strong>
-
-<br>
-
-<code>name=Ravi</code>
-
-&nbsp;&nbsp;
-
-Search name containing Ravi
-
-<br>
-
-<code>name="Ravi Mahajan"</code>
-
-&nbsp;&nbsp;
-
-Exact name
-
-<br>
-
-<code>id=5</code>
-
-&nbsp;&nbsp;
-
-Search ID 5
-
-<br>
-
-<code>id=1-10</code>
-
-&nbsp;&nbsp;
-
-ID from 1 to 10
-
-<br>
-
-<code>basic_pay&gt;30000</code>
-
-&nbsp;&nbsp;
-
-Basic Pay above 30000
-
-<br>
-
-<code>basic_pay=30000-50000</code>
-
-&nbsp;&nbsp;
-
-Basic Pay from 30000 to 50000
-
-<br>
-
-<code>da_percent&gt;=50</code>
-
-&nbsp;&nbsp;
-
-DA 50% or more
-
-<br>
-
-<code>hra_percent&lt;30</code>
-
-&nbsp;&nbsp;
-
-HRA below 30%
-
-<br>
-
-<code>total_payment&gt;40000</code>
-
-&nbsp;&nbsp;
-
-Total Payment above 40000
-
-<br>
-
-<code>name=Ravi AND basic_pay&gt;30000</code>
-
-&nbsp;&nbsp;
-
-Multiple conditions
-
-<br>
-
-<code>all</code>
-
-&nbsp;&nbsp;
-
-Show all records
-
 </div>
 
+
+<div class="search-help">
+
+<strong>Examples:</strong>
+
+<br><br>
+
+
+1. Search by ID:
+
+<br>
+
+<code>
+SELECT * FROM employee WHERE id = 1;
+</code>
+
+
+<br><br>
+
+
+2. Search by employee name:
+
+<br>
+
+<code>
+SELECT * FROM employee
+WHERE Employee_name LIKE '%Ravi%';
+</code>
+
+
+<br><br>
+
+
+3. Search IDs from 1 to 10:
+
+<br>
+
+<code>
+SELECT * FROM employee
+WHERE id BETWEEN 1 AND 10;
+</code>
+
+
+<br><br>
+
+
+4. Basic Pay greater than 30000:
+
+<br>
+
+<code>
+SELECT * FROM employee
+WHERE BASIC_PAY > 30000;
+</code>
+
+
+<br><br>
+
+
+5. Basic Pay between 30000 and 50000:
+
+<br>
+
+<code>
+SELECT * FROM employee
+WHERE BASIC_PAY BETWEEN 30000 AND 50000;
+</code>
+
+
+<br><br>
+
+
+6. Highest Total Payment first:
+
+<br>
+
+<code>
+SELECT * FROM employee
+ORDER BY TOTAL_PAYMENT DESC;
+</code>
+
+
+<br><br>
+
+
+7. Select particular columns:
+
+<br>
+
+<code>
+SELECT Employee_name, BASIC_PAY, TOTAL_PAYMENT
+FROM employee
+WHERE TOTAL_PAYMENT > 40000;
+</code>
+
+
+<br><br>
+
+
+<strong>
+Only SELECT commands are permitted in this search box.
+</strong>
 
 </div>
 
@@ -1118,59 +978,71 @@ Show all records
 
 /*
 =========================================================
-DISPLAY SEARCH RESULT
+SEARCH ERROR
 =========================================================
 */
 
-if ($search != "") {
+if ($search_error != "") {
 
 ?>
 
 
-<div class="card">
+<div class="search-error">
 
+<?php
 
-<h2>Search Result</h2>
+echo htmlspecialchars(
+    $search_error
+);
+
+?>
+
+</div>
 
 
 <?php
 
-if ($search_message != "") {
-
-    echo '<div class="search-error">';
-
-    echo $search_message;
-
-    echo '</div>';
-
 }
 
-else {
 
-    echo '<div class="search-info">';
-
-    echo "Search command: <strong>";
-
-    echo htmlspecialchars($search);
-
-    echo "</strong>";
-
-    echo " &nbsp; | &nbsp; Records found: ";
-
-    echo "<strong>$search_count</strong>";
-
-    echo '</div>';
-
-}
-
+/*
+=========================================================
+SEARCH RESULT
+=========================================================
+*/
 
 if (
-    $search_result
+    $search_sql !== ""
     &&
-    $search_message == ""
+    $search_error === ""
+    &&
+    $search_result
 ) {
 
 ?>
+
+
+<div class="search-info">
+
+<strong>
+Search completed.
+</strong>
+
+&nbsp;&nbsp;
+
+Records found:
+
+<strong>
+
+<?php
+
+echo $search_count;
+
+?>
+
+</strong>
+
+</div>
 
 
 <div class="table-container">
@@ -1248,7 +1120,9 @@ echo htmlspecialchars(
 
 <?php
 
-echo intval($row["id"]);
+echo isset($row["id"])
+    ? intval($row["id"])
+    : "";
 
 ?>
 
@@ -1259,10 +1133,12 @@ echo intval($row["id"]);
 
 <?php
 
-echo number_format(
-    $row["BASIC_PAY"],
-    2
-);
+echo isset($row["BASIC_PAY"])
+    ? number_format(
+        $row["BASIC_PAY"],
+        2
+    )
+    : "";
 
 ?>
 
@@ -1273,24 +1149,12 @@ echo number_format(
 
 <?php
 
-echo number_format(
-    $row["DA_PERCENT"],
-    2
-);
-
-?> %
-
-</td>
-
-
-<td>
-
-<?php
-
-echo number_format(
-    $row["DA_AMOUNT"],
-    2
-);
+echo isset($row["DA_PERCENT"])
+    ? number_format(
+        $row["DA_PERCENT"],
+        2
+    )
+    : "";
 
 ?>
 
@@ -1301,24 +1165,12 @@ echo number_format(
 
 <?php
 
-echo number_format(
-    $row["HRA_PERCENT"],
-    2
-);
-
-?> %
-
-</td>
-
-
-<td>
-
-<?php
-
-echo number_format(
-    $row["HRA_AMOUNT"],
-    2
-);
+echo isset($row["DA_AMOUNT"])
+    ? number_format(
+        $row["DA_AMOUNT"],
+        2
+    )
+    : "";
 
 ?>
 
@@ -1329,10 +1181,12 @@ echo number_format(
 
 <?php
 
-echo number_format(
-    $row["PF_DEDUCTION"],
-    2
-);
+echo isset($row["HRA_PERCENT"])
+    ? number_format(
+        $row["HRA_PERCENT"],
+        2
+    )
+    : "";
 
 ?>
 
@@ -1343,10 +1197,44 @@ echo number_format(
 
 <?php
 
-echo number_format(
-    $row["ANY_OTHER_ALLOWANCE"],
-    2
-);
+echo isset($row["HRA_AMOUNT"])
+    ? number_format(
+        $row["HRA_AMOUNT"],
+        2
+    )
+    : "";
+
+?>
+
+</td>
+
+
+<td>
+
+<?php
+
+echo isset($row["PF_DEDUCTION"])
+    ? number_format(
+        $row["PF_DEDUCTION"],
+        2
+    )
+    : "";
+
+?>
+
+</td>
+
+
+<td>
+
+<?php
+
+echo isset($row["ANY_OTHER_ALLOWANCE"])
+    ? number_format(
+        $row["ANY_OTHER_ALLOWANCE"],
+        2
+    )
+    : "";
 
 ?>
 
@@ -1357,10 +1245,12 @@ echo number_format(
 
 <?php
 
-echo number_format(
-    $row["TOTAL_PAYMENT"],
-    2
-);
+echo isset($row["TOTAL_PAYMENT"])
+    ? number_format(
+        $row["TOTAL_PAYMENT"],
+        2
+    )
+    : "";
 
 ?>
 
@@ -1368,6 +1258,19 @@ echo number_format(
 
 
 <td class="action-cell">
+
+
+<?php
+
+/*
+---------------------------------------------------------
+Only provide Edit/Delete if ID is present.
+---------------------------------------------------------
+*/
+
+if (isset($row["id"])) {
+
+?>
 
 
 <a
@@ -1415,6 +1318,13 @@ Delete
 
 
 </form>
+
+
+<?php
+
+}
+
+?>
 
 
 </td>
@@ -1469,15 +1379,8 @@ No records found.
 </div>
 
 
-<?php
-
-}
-
-?>
-
-
 <!-- =====================================================
-     ADD / UPDATE FORM
+     ADD / UPDATE EMPLOYEE
 ====================================================== -->
 
 
@@ -1539,7 +1442,9 @@ Basic Pay + DA Amount + HRA Amount
 
         if ($edit) {
 
-            echo intval($edit["id"]);
+            echo intval(
+                $edit["id"]
+            );
         }
 
     ?>"
@@ -1865,7 +1770,9 @@ echo htmlspecialchars(
 
 <?php
 
-echo intval($row["id"]);
+echo intval(
+    $row["id"]
+);
 
 ?>
 
