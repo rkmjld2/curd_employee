@@ -1,20 +1,19 @@
-```sql
--- ============================================
--- Employee Payroll Database
--- ============================================
+-- =====================================================
+-- EMPLOYEE PAYROLL DATABASE
+-- =====================================================
 
--- Create database
 CREATE DATABASE IF NOT EXISTS employeer;
 
--- Select database
 USE employeer;
 
 
--- ============================================
--- Create employee table
--- ============================================
+-- =====================================================
+-- EMPLOYEE TABLE
+-- =====================================================
 
 CREATE TABLE IF NOT EXISTS employee (
+
+    Employee_name VARCHAR(100) NOT NULL DEFAULT '',
 
     id INT AUTO_INCREMENT PRIMARY KEY,
 
@@ -35,4 +34,3 @@ CREATE TABLE IF NOT EXISTS employee (
     TOTAL_PAYMENT DECIMAL(12,2) NOT NULL DEFAULT 0
 
 );
-```
