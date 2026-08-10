@@ -7,7 +7,7 @@ $message = "";
 
 /*
 =========================================================
-DELETE
+DELETE EMPLOYEE
 =========================================================
 */
 
@@ -36,7 +36,7 @@ if (
 
 /*
 =========================================================
-ADD / UPDATE
+ADD / UPDATE EMPLOYEE
 =========================================================
 */
 
@@ -66,9 +66,9 @@ if (
 
 
     /*
-    -----------------------------------------------------
+    =====================================================
     CALCULATIONS
-    -----------------------------------------------------
+    =====================================================
     */
 
     $da_amount =
@@ -77,9 +77,15 @@ if (
     $hra_amount =
         ($basic_pay * $hra_percent) / 100;
 
+
+    /*
+    IMPORTANT:
+    BASIC PAY IS INCLUDED IN TOTAL PAYMENT
+    */
+
     $total_payment =
-		 $Basic_pay
-        +$da_amount
+        $basic_pay
+        + $da_amount
         + $hra_amount
         - $pf_deduction
         + $other_allowance;
@@ -87,7 +93,7 @@ if (
 
     /*
     =====================================================
-    UPDATE
+    UPDATE EXISTING EMPLOYEE
     =====================================================
     */
 
@@ -135,7 +141,7 @@ if (
 
     /*
     =====================================================
-    INSERT
+    INSERT NEW EMPLOYEE
     =====================================================
     */
 
@@ -190,7 +196,7 @@ if (
 
 /*
 =========================================================
-EDIT RECORD
+EDIT EMPLOYEE
 =========================================================
 */
 
@@ -223,23 +229,25 @@ if (isset($_GET["edit"])) {
 SQL SELECT SEARCH
 =========================================================
 
-The search box accepts MySQL SELECT commands.
+The search box accepts normal MySQL SELECT statements.
 
 Examples:
 
-SELECT * FROM employee WHERE id = 1;
+SELECT * FROM employee WHERE id = 1
 
 SELECT * FROM employee
-WHERE Employee_name LIKE '%Ravi%';
+WHERE Employee_name LIKE '%Ravi%'
 
-SELECT * FROM employee
-WHERE id BETWEEN 1 AND 10;
+SELECT COUNT(*) AS TotalEmployees
+FROM employee
 
-SELECT * FROM employee
-WHERE BASIC_PAY > 30000
-ORDER BY BASIC_PAY DESC;
+SELECT SUM(TOTAL_PAYMENT) AS TotalSalary
+FROM employee
 
-Only SELECT statements are permitted.
+SELECT AVG(BASIC_PAY) AS AverageBasicPay
+FROM employee
+
+Only SELECT statements are allowed.
 
 =========================================================
 */
@@ -253,9 +261,7 @@ $search_error = "";
 $search_count = 0;
 
 
-if (
-    isset($_GET["search"])
-) {
+if (isset($_GET["search"])) {
 
     $search_sql =
         trim($_GET["search"]);
@@ -265,7 +271,7 @@ if (
 
         /*
         -------------------------------------------------
-        REMOVE ONE OPTIONAL SEMICOLON AT END
+        REMOVE SEMICOLON AT END
         -------------------------------------------------
         */
 
@@ -281,7 +287,7 @@ if (
 
         /*
         -------------------------------------------------
-        CHECK THAT COMMAND STARTS WITH SELECT
+        MUST START WITH SELECT
         -------------------------------------------------
         */
 
@@ -300,7 +306,7 @@ if (
 
         /*
         -------------------------------------------------
-        BLOCK DANGEROUS SQL KEYWORDS
+        BLOCK DANGEROUS COMMANDS
         -------------------------------------------------
         */
 
@@ -312,17 +318,14 @@ if (
         ) {
 
             $search_error =
-                "Only SELECT statements are allowed. "
-                . "INSERT, UPDATE, DELETE, DROP, ALTER, "
-                . "TRUNCATE and other modification commands "
-                . "are not permitted.";
+                "Only SELECT statements are allowed.";
 
         }
 
 
         /*
         -------------------------------------------------
-        BLOCK MULTIPLE SQL STATEMENTS
+        PREVENT MULTIPLE SQL STATEMENTS
         -------------------------------------------------
         */
 
@@ -341,7 +344,7 @@ if (
 
         /*
         -------------------------------------------------
-        EXECUTE SELECT
+        EXECUTE SELECT QUERY
         -------------------------------------------------
         */
 
@@ -405,6 +408,12 @@ $result =
 
 <style>
 
+/*
+=========================================================
+GENERAL
+=========================================================
+*/
+
 * {
     box-sizing: border-box;
 }
@@ -424,7 +433,7 @@ body {
 
     width: 95%;
 
-    max-width: 1400px;
+    max-width: 1450px;
 
     margin: 30px auto;
 }
@@ -463,21 +472,37 @@ h2 {
 
 /*
 =========================================================
-SEARCH
+MESSAGE
 =========================================================
 */
 
-.search-box {
+.message {
 
-    width: 100%;
+    background: #d1e7dd;
+
+    color: #0f5132;
+
+    padding: 12px;
+
+    margin-bottom: 20px;
+
+    border-radius: 5px;
+
+    font-weight: bold;
 }
 
+
+/*
+=========================================================
+SQL SEARCH
+=========================================================
+*/
 
 .search-box textarea {
 
     width: 100%;
 
-    min-height: 90px;
+    min-height: 100px;
 
     padding: 12px;
 
@@ -516,6 +541,14 @@ SEARCH
 .clear-button {
 
     background: #6c757d;
+
+    color: white;
+}
+
+
+.print-button {
+
+    background: #198754;
 
     color: white;
 }
@@ -583,48 +616,9 @@ SEARCH
 
 /*
 =========================================================
-FORM
+BUTTONS
 =========================================================
 */
-
-.form-grid {
-
-    display: grid;
-
-    grid-template-columns:
-        repeat(auto-fit, minmax(200px, 1fr));
-
-    gap: 15px;
-}
-
-
-.form-group {
-
-    display: flex;
-
-    flex-direction: column;
-}
-
-
-label {
-
-    font-weight: bold;
-
-    margin-bottom: 6px;
-}
-
-
-input {
-
-    padding: 10px;
-
-    border: 1px solid #aaa;
-
-    border-radius: 5px;
-
-    font-size: 15px;
-}
-
 
 button,
 .btn {
@@ -681,6 +675,57 @@ button,
 }
 
 
+/*
+=========================================================
+FORM
+=========================================================
+*/
+
+.form-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(200px, 1fr));
+
+    gap: 15px;
+}
+
+
+.form-group {
+
+    display: flex;
+
+    flex-direction: column;
+}
+
+
+label {
+
+    font-weight: bold;
+
+    margin-bottom: 6px;
+}
+
+
+input {
+
+    padding: 10px;
+
+    border: 1px solid #aaa;
+
+    border-radius: 5px;
+
+    font-size: 15px;
+}
+
+
+/*
+=========================================================
+TABLE
+=========================================================
+*/
+
 .table-container {
 
     overflow-x: auto;
@@ -690,8 +735,6 @@ button,
 table {
 
     width: 100%;
-
-    min-width: 1250px;
 
     border-collapse: collapse;
 }
@@ -730,6 +773,24 @@ tr:nth-child(even) {
 }
 
 
+.action-cell {
+
+    white-space: nowrap;
+}
+
+
+.delete-form {
+
+    display: inline;
+}
+
+
+/*
+=========================================================
+CALCULATION NOTE
+=========================================================
+*/
+
 .note {
 
     background: #fff3cd;
@@ -744,31 +805,82 @@ tr:nth-child(even) {
 }
 
 
-.message {
+/*
+=========================================================
+PRINT
+=========================================================
+*/
 
-    background: #d1e7dd;
+.print-button-area {
 
-    color: #0f5132;
-
-    padding: 12px;
-
-    margin-bottom: 20px;
-
-    border-radius: 5px;
-
-    font-weight: bold;
+    margin: 15px 0;
 }
 
 
-.action-cell {
+/*
+=========================================================
+PRINT ONLY SEARCH RESULT
+=========================================================
+*/
 
-    white-space: nowrap;
-}
+@media print {
+
+    body * {
+
+        visibility: hidden;
+    }
 
 
-.delete-form {
+    #search-print-area,
+    #search-print-area * {
 
-    display: inline;
+        visibility: visible;
+    }
+
+
+    #search-print-area {
+
+        position: absolute;
+
+        left: 0;
+
+        top: 0;
+
+        width: 100%;
+    }
+
+
+    #search-print-area table {
+
+        width: 100%;
+
+        border-collapse: collapse;
+    }
+
+
+    #search-print-area th,
+    #search-print-area td {
+
+        border: 1px solid #000;
+
+        padding: 6px;
+
+        text-align: center;
+    }
+
+
+    #search-print-area th {
+
+        background: #ddd !important;
+
+        color: #000 !important;
+    }
+
+
+    .print-button-area {
+
+        display: none;
+    }
 }
 
 </style>
@@ -789,7 +901,7 @@ tr:nth-child(even) {
 
 /*
 =========================================================
-MESSAGE
+DISPLAY MESSAGE
 =========================================================
 */
 
@@ -806,7 +918,7 @@ if ($message != "") {
 
 
 <!-- =====================================================
-     SQL SELECT SEARCH
+     SQL SEARCH SECTION
 ====================================================== -->
 
 <div class="card">
@@ -826,7 +938,7 @@ if ($message != "") {
 
 <textarea
     name="search"
-    placeholder="Enter MySQL SELECT command here, for example: SELECT * FROM employee WHERE id = 1;"
+    placeholder="Enter MySQL SELECT command here..."
 ><?php
 
 echo htmlspecialchars(
@@ -871,12 +983,35 @@ Show All
 
 <div class="search-help">
 
+<strong>
+You can enter any valid single SELECT statement.
+</strong>
+
+<br>
+
+Only SELECT statements are allowed.
+
+<br><br>
+
+
 <strong>Examples:</strong>
 
 <br><br>
 
 
-1. Search by ID:
+SELECT all records:
+
+<br>
+
+<code>
+SELECT * FROM employee;
+</code>
+
+
+<br><br>
+
+
+Search by ID:
 
 <br>
 
@@ -888,7 +1023,7 @@ SELECT * FROM employee WHERE id = 1;
 <br><br>
 
 
-2. Search by employee name:
+Search by employee name:
 
 <br>
 
@@ -901,7 +1036,7 @@ WHERE Employee_name LIKE '%Ravi%';
 <br><br>
 
 
-3. Search IDs from 1 to 10:
+ID range:
 
 <br>
 
@@ -914,7 +1049,7 @@ WHERE id BETWEEN 1 AND 10;
 <br><br>
 
 
-4. Basic Pay greater than 30000:
+Basic Pay greater than 30000:
 
 <br>
 
@@ -927,7 +1062,7 @@ WHERE BASIC_PAY > 30000;
 <br><br>
 
 
-5. Basic Pay between 30000 and 50000:
+Basic Pay range:
 
 <br>
 
@@ -940,27 +1075,52 @@ WHERE BASIC_PAY BETWEEN 30000 AND 50000;
 <br><br>
 
 
-6. Highest Total Payment first:
+Total number of employees:
 
 <br>
 
 <code>
-SELECT * FROM employee
-ORDER BY TOTAL_PAYMENT DESC;
+SELECT COUNT(*) AS TotalEmployees
+FROM employee;
 </code>
 
 
 <br><br>
 
 
-7. Select particular columns:
+Total Payment:
 
 <br>
 
 <code>
-SELECT Employee_name, BASIC_PAY, TOTAL_PAYMENT
-FROM employee
-WHERE TOTAL_PAYMENT > 40000;
+SELECT SUM(TOTAL_PAYMENT) AS TotalPayment
+FROM employee;
+</code>
+
+
+<br><br>
+
+
+Average Basic Pay:
+
+<br>
+
+<code>
+SELECT AVG(BASIC_PAY) AS AverageBasicPay
+FROM employee;
+</code>
+
+
+<br><br>
+
+
+Highest Total Payment:
+
+<br>
+
+<code>
+SELECT MAX(TOTAL_PAYMENT) AS HighestPayment
+FROM employee;
 </code>
 
 
@@ -968,7 +1128,8 @@ WHERE TOTAL_PAYMENT > 40000;
 
 
 <strong>
-Only SELECT commands are permitted in this search box.
+Do NOT use INSERT, UPDATE, DELETE, DROP, ALTER,
+TRUNCATE, CREATE, etc. in the search box.
 </strong>
 
 </div>
@@ -1030,7 +1191,7 @@ Search completed.
 
 &nbsp;&nbsp;
 
-Records found:
+Rows returned:
 
 <strong>
 
@@ -1045,7 +1206,29 @@ echo $search_count;
 </div>
 
 
-<div class="table-container">
+<div class="print-button-area">
+
+<button
+    type="button"
+    class="btn print-button"
+    onclick="printSearchResult()"
+>
+
+ðŸ–¨ Print Search Result
+
+</button>
+
+</div>
+
+
+<!-- =====================================================
+     THIS AREA IS PRINTED
+====================================================== -->
+
+<div
+    id="search-print-area"
+    class="table-container"
+>
 
 
 <table>
@@ -1055,27 +1238,111 @@ echo $search_count;
 
 <tr>
 
-<th>Employee Name</th>
 
-<th>ID</th>
+<?php
 
-<th>Basic Pay</th>
+/*
+=========================================================
+DYNAMIC COLUMN HEADINGS
+=========================================================
+*/
 
-<th>DA %</th>
+if (
+    $search_result
+    &&
+    mysqli_num_fields(
+        $search_result
+    ) > 0
+) {
 
-<th>DA Amount</th>
+    $fields =
+        mysqli_fetch_fields(
+            $search_result
+        );
 
-<th>HRA %</th>
 
-<th>HRA Amount</th>
+    foreach (
+        $fields as $field
+    ) {
 
-<th>PF Deduction</th>
+?>
 
-<th>Other Allowance</th>
 
-<th>Total Payment</th>
+<th>
 
-<th>Action</th>
+<?php
+
+echo htmlspecialchars(
+    $field->name
+);
+
+?>
+
+</th>
+
+
+<?php
+
+    }
+
+}
+
+?>
+
+
+<?php
+
+/*
+---------------------------------------------------------
+ACTION COLUMN
+
+Only add Action when query contains ID.
+---------------------------------------------------------
+*/
+
+$has_id_column = false;
+
+
+if (
+    isset($fields)
+) {
+
+    foreach (
+        $fields as $field
+    ) {
+
+        if (
+            strtolower(
+                $field->name
+            ) === "id"
+        ) {
+
+            $has_id_column = true;
+
+            break;
+        }
+    }
+}
+
+
+if ($has_id_column) {
+
+?>
+
+
+<th>
+
+Action
+
+</th>
+
+
+<?php
+
+}
+
+?>
+
 
 </tr>
 
@@ -1103,174 +1370,73 @@ if ($search_count > 0) {
 <tr>
 
 
-<td>
-
 <?php
 
-echo htmlspecialchars(
-    $row["Employee_name"]
-);
+foreach (
+    $fields as $field
+) {
+
+    $column =
+        $field->name;
 
 ?>
 
-</td>
-
 
 <td>
 
 <?php
 
-echo isset($row["id"])
-    ? intval($row["id"])
-    : "";
-
-?>
-
-</td>
-
-
-<td>
-
-<?php
-
-echo isset($row["BASIC_PAY"])
-    ? number_format(
-        $row["BASIC_PAY"],
-        2
+if (
+    isset(
+        $row[$column]
     )
-    : "";
+) {
+
+    /*
+    Format numeric payment values.
+    */
+
+    if (
+        is_numeric(
+            $row[$column]
+        )
+        &&
+        preg_match(
+            '/(PAY|AMOUNT|BASIC|DEDUCTION|ALLOWANCE|PERCENT)/i',
+            $column
+        )
+    ) {
+
+        echo number_format(
+            (float)$row[$column],
+            2
+        );
+
+    } else {
+
+        echo htmlspecialchars(
+            (string)$row[$column]
+        );
+    }
+
+}
 
 ?>
 
 </td>
 
-
-<td>
 
 <?php
 
-echo isset($row["DA_PERCENT"])
-    ? number_format(
-        $row["DA_PERCENT"],
-        2
-    )
-    : "";
+}
+
+
+if ($has_id_column) {
 
 ?>
-
-</td>
-
-
-<td>
-
-<?php
-
-echo isset($row["DA_AMOUNT"])
-    ? number_format(
-        $row["DA_AMOUNT"],
-        2
-    )
-    : "";
-
-?>
-
-</td>
-
-
-<td>
-
-<?php
-
-echo isset($row["HRA_PERCENT"])
-    ? number_format(
-        $row["HRA_PERCENT"],
-        2
-    )
-    : "";
-
-?>
-
-</td>
-
-
-<td>
-
-<?php
-
-echo isset($row["HRA_AMOUNT"])
-    ? number_format(
-        $row["HRA_AMOUNT"],
-        2
-    )
-    : "";
-
-?>
-
-</td>
-
-
-<td>
-
-<?php
-
-echo isset($row["PF_DEDUCTION"])
-    ? number_format(
-        $row["PF_DEDUCTION"],
-        2
-    )
-    : "";
-
-?>
-
-</td>
-
-
-<td>
-
-<?php
-
-echo isset($row["ANY_OTHER_ALLOWANCE"])
-    ? number_format(
-        $row["ANY_OTHER_ALLOWANCE"],
-        2
-    )
-    : "";
-
-?>
-
-</td>
-
-
-<td class="total">
-
-<?php
-
-echo isset($row["TOTAL_PAYMENT"])
-    ? number_format(
-        $row["TOTAL_PAYMENT"],
-        2
-    )
-    : "";
-
-?>
-
-</td>
 
 
 <td class="action-cell">
-
-
-<?php
-
-/*
----------------------------------------------------------
-Only provide Edit/Delete if ID is present.
----------------------------------------------------------
-*/
-
-if (isset($row["id"])) {
-
-?>
 
 
 <a
@@ -1320,14 +1486,14 @@ Delete
 </form>
 
 
+</td>
+
+
 <?php
 
 }
 
 ?>
-
-
-</td>
 
 
 </tr>
@@ -1346,7 +1512,12 @@ else {
 
 <tr>
 
-<td colspan="11">
+<td
+    colspan="<?php
+        echo count($fields)
+        + ($has_id_column ? 1 : 0);
+    ?>"
+>
 
 No records found.
 
@@ -1366,6 +1537,7 @@ No records found.
 
 </table>
 
+
 </div>
 
 
@@ -1382,7 +1554,6 @@ No records found.
 <!-- =====================================================
      ADD / UPDATE EMPLOYEE
 ====================================================== -->
-
 
 <div class="card">
 
@@ -1409,21 +1580,25 @@ if ($edit) {
 
 <strong>Calculation:</strong>
 
-<br>
+<br><br>
 
 DA Amount =
-Basic Pay × DA % / 100
+Basic Pay Ã— DA % / 100
 
 <br>
 
 HRA Amount =
-Basic Pay × HRA % / 100
+Basic Pay Ã— HRA % / 100
 
-<br>
+<br><br>
+
+<strong>
 
 Total Payment =
 Basic Pay + DA Amount + HRA Amount
 - PF Deduction + Other Allowance
+
+</strong>
 
 </div>
 
@@ -1454,11 +1629,16 @@ Basic Pay + DA Amount + HRA Amount
 <div class="form-grid">
 
 
-<!-- EMPLOYEE NAME -->
+<!-- =====================================================
+     EMPLOYEE NAME
+====================================================== -->
 
 <div class="form-group">
 
-<label>Employee Name</label>
+<label>
+Employee Name
+</label>
+
 
 <input
     type="text"
@@ -1482,11 +1662,16 @@ Basic Pay + DA Amount + HRA Amount
 </div>
 
 
-<!-- BASIC PAY -->
+<!-- =====================================================
+     BASIC PAY
+====================================================== -->
 
 <div class="form-group">
 
-<label>Basic Pay</label>
+<label>
+Basic Pay
+</label>
+
 
 <input
     type="number"
@@ -1508,11 +1693,16 @@ Basic Pay + DA Amount + HRA Amount
 </div>
 
 
-<!-- DA -->
+<!-- =====================================================
+     DA %
+====================================================== -->
 
 <div class="form-group">
 
-<label>DA %</label>
+<label>
+DA %
+</label>
+
 
 <input
     type="number"
@@ -1534,11 +1724,16 @@ Basic Pay + DA Amount + HRA Amount
 </div>
 
 
-<!-- HRA -->
+<!-- =====================================================
+     HRA %
+====================================================== -->
 
 <div class="form-group">
 
-<label>HRA %</label>
+<label>
+HRA %
+</label>
+
 
 <input
     type="number"
@@ -1560,11 +1755,16 @@ Basic Pay + DA Amount + HRA Amount
 </div>
 
 
-<!-- PF -->
+<!-- =====================================================
+     PF DEDUCTION
+====================================================== -->
 
 <div class="form-group">
 
-<label>PF Deduction</label>
+<label>
+PF Deduction
+</label>
+
 
 <input
     type="number"
@@ -1590,11 +1790,16 @@ Basic Pay + DA Amount + HRA Amount
 </div>
 
 
-<!-- OTHER ALLOWANCE -->
+<!-- =====================================================
+     OTHER ALLOWANCE
+====================================================== -->
 
 <div class="form-group">
 
-<label>Any Other Allowance</label>
+<label>
+Any Other Allowance
+</label>
+
 
 <input
     type="number"
@@ -1686,11 +1891,12 @@ Add Employee
      ALL EMPLOYEE RECORDS
 ====================================================== -->
 
-
 <div class="card">
 
 
-<h2>All Employee Records</h2>
+<h2>
+All Employee Records
+</h2>
 
 
 <div class="table-container">
@@ -1703,27 +1909,49 @@ Add Employee
 
 <tr>
 
-<th>Employee Name</th>
+<th>
+Employee Name
+</th>
 
-<th>ID</th>
+<th>
+ID
+</th>
 
-<th>Basic Pay</th>
+<th>
+Basic Pay
+</th>
 
-<th>DA %</th>
+<th>
+DA %
+</th>
 
-<th>DA Amount</th>
+<th>
+DA Amount
+</th>
 
-<th>HRA %</th>
+<th>
+HRA %
+</th>
 
-<th>HRA Amount</th>
+<th>
+HRA Amount
+</th>
 
-<th>PF Deduction</th>
+<th>
+PF Deduction
+</th>
 
-<th>Other Allowance</th>
+<th>
+Other Allowance
+</th>
 
-<th>Total Payment</th>
+<th>
+Total Payment
+</th>
 
-<th>Action</th>
+<th>
+Action
+</th>
 
 </tr>
 
@@ -1986,6 +2214,21 @@ No employee records found.
 
 
 </div>
+
+
+<!-- =====================================================
+     JAVASCRIPT
+====================================================== -->
+
+<script>
+
+function printSearchResult() {
+
+    window.print();
+
+}
+
+</script>
 
 
 </body>
