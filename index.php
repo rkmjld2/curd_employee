@@ -508,7 +508,7 @@ Basic Pay × HRA % / 100
 <br>
 
 Total Payment =
-DA Amount + HRA Amount - PF Deduction + Other Allowance
+Basic Pay+DA Amount + HRA Amount - PF Deduction + Other Allowance
 
 </div>
 
