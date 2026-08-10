@@ -1,6 +1,3 @@
-## `index.php`
-
-```php
 <?php
 
 include("db.php");
