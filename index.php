@@ -81,8 +81,8 @@ if (
         ($basic_pay * $hra_percent) / 100;
 
 
-    $total_payment =
-        $da_amount
+    $total_payment =$basic_pay
+        + $da_amount
         + $hra_amount
         - $pf_deduction
         + $other_allowance;
