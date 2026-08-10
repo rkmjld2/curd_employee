@@ -2,102 +2,74 @@
 
 include("db.php");
 
-
-/*
-=========================================================
-MESSAGE
-=========================================================
-*/
-
 $message = "";
 
 
 /*
 =========================================================
-DELETE RECORD
+DELETE
 =========================================================
 */
 
 if (
-    $_SERVER["REQUEST_METHOD"] == "POST"
-    &&
-    isset($_POST["delete_id"])
+    $_SERVER["REQUEST_METHOD"] === "POST"
+    && isset($_POST["delete_id"])
 ) {
 
     $id = intval($_POST["delete_id"]);
 
-    $sql =
-        "DELETE FROM employee WHERE id = $id";
+    if ($id > 0) {
 
+        $sql = "DELETE FROM employee WHERE id = $id";
 
-    if (mysqli_query($conn, $sql)) {
+        if (mysqli_query($conn, $sql)) {
 
-        $message =
-            "Employee record deleted successfully.";
+            $message = "Employee record deleted successfully.";
 
-    } else {
+        } else {
 
-        $message =
-            "Delete failed: "
-            . mysqli_error($conn);
+            $message = "Delete failed: " . mysqli_error($conn);
+        }
     }
 }
 
 
 /*
 =========================================================
-ADD / UPDATE RECORD
+ADD / UPDATE
 =========================================================
 */
 
 if (
-    $_SERVER["REQUEST_METHOD"] == "POST"
-    &&
-    isset($_POST["save"])
+    $_SERVER["REQUEST_METHOD"] === "POST"
+    && isset($_POST["save"])
 ) {
 
-    $id =
-        isset($_POST["id"])
+    $id = isset($_POST["id"])
         ? intval($_POST["id"])
         : 0;
 
 
-    /*
-    -----------------------------------------------------
-    EMPLOYEE NAME
-    -----------------------------------------------------
-    */
-
-    $employee_name =
-        mysqli_real_escape_string(
-            $conn,
-            trim($_POST["employee_name"])
-        );
+    $employee_name = mysqli_real_escape_string(
+        $conn,
+        trim($_POST["employee_name"])
+    );
 
 
-    $basic_pay =
-        floatval($_POST["basic_pay"]);
+    $basic_pay = floatval($_POST["basic_pay"]);
 
+    $da_percent = floatval($_POST["da_percent"]);
 
-    $da_percent =
-        floatval($_POST["da_percent"]);
+    $hra_percent = floatval($_POST["hra_percent"]);
 
+    $pf_deduction = floatval($_POST["pf_deduction"]);
 
-    $hra_percent =
-        floatval($_POST["hra_percent"]);
-
-
-    $pf_deduction =
-        floatval($_POST["pf_deduction"]);
-
-
-    $other_allowance =
-        floatval($_POST["other_allowance"]);
+    $other_allowance = floatval($_POST["other_allowance"]);
 
 
     /*
     -----------------------------------------------------
-    DA AMOUNT
+    CALCULATIONS
     -----------------------------------------------------
     */
 
@@ -105,21 +77,9 @@ if (
         ($basic_pay * $da_percent) / 100;
 
 
-    /*
-    -----------------------------------------------------
-    HRA AMOUNT
-    -----------------------------------------------------
-    */
-
     $hra_amount =
         ($basic_pay * $hra_percent) / 100;
 
-
-    /*
-    -----------------------------------------------------
-    TOTAL PAYMENT
-    -----------------------------------------------------
-    */
 
     $total_payment =
         $da_amount
@@ -138,9 +98,7 @@ if (
 
         $sql = "
 
-        UPDATE employee
-
-        SET
+        UPDATE employee SET
 
             Employee_name = '$employee_name',
 
@@ -173,8 +131,7 @@ if (
         } else {
 
             $message =
-                "Update failed: "
-                . mysqli_error($conn);
+                "Update failed: " . mysqli_error($conn);
         }
     }
 
@@ -192,49 +149,29 @@ if (
         INSERT INTO employee
 
         (
-
             Employee_name,
-
             BASIC_PAY,
-
             DA_PERCENT,
-
             DA_AMOUNT,
-
             HRA_PERCENT,
-
             HRA_AMOUNT,
-
             PF_DEDUCTION,
-
             ANY_OTHER_ALLOWANCE,
-
             TOTAL_PAYMENT
-
         )
 
         VALUES
 
         (
-
             '$employee_name',
-
             $basic_pay,
-
             $da_percent,
-
             $da_amount,
-
             $hra_percent,
-
             $hra_amount,
-
             $pf_deduction,
-
             $other_allowance,
-
             $total_payment
-
         )
 
         ";
@@ -248,8 +185,7 @@ if (
         } else {
 
             $message =
-                "Insert failed: "
-                . mysqli_error($conn);
+                "Insert failed: " . mysqli_error($conn);
         }
     }
 }
@@ -257,7 +193,7 @@ if (
 
 /*
 =========================================================
-GET RECORD FOR EDIT
+EDIT RECORD
 =========================================================
 */
 
@@ -266,35 +202,33 @@ $edit = NULL;
 
 if (isset($_GET["edit"])) {
 
-    $id =
-        intval($_GET["edit"]);
+    $id = intval($_GET["edit"]);
 
+    if ($id > 0) {
 
-    $sql =
-        "SELECT * FROM employee WHERE id = $id";
+        $sql =
+            "SELECT * FROM employee WHERE id = $id";
 
+        $result =
+            mysqli_query($conn, $sql);
 
-    $result =
-        mysqli_query($conn, $sql);
+        if ($result) {
 
-
-    if ($result) {
-
-        $edit =
-            mysqli_fetch_assoc($result);
+            $edit =
+                mysqli_fetch_assoc($result);
+        }
     }
 }
 
 
 /*
 =========================================================
-GET ALL RECORDS
+GET ALL EMPLOYEES
 =========================================================
 */
 
 $sql =
     "SELECT * FROM employee ORDER BY id DESC";
-
 
 $result =
     mysqli_query($conn, $sql);
@@ -324,7 +258,6 @@ $result =
     box-sizing: border-box;
 }
 
-
 body {
 
     margin: 0;
@@ -334,26 +267,21 @@ body {
     background: #f2f4f7;
 }
 
-
 .container {
 
     width: 95%;
 
-    max-width: 1250px;
+    max-width: 1300px;
 
     margin: 30px auto;
 }
-
 
 h1 {
 
     text-align: center;
 
     color: #1d3557;
-
-    margin-bottom: 25px;
 }
-
 
 .card {
 
@@ -365,21 +293,18 @@ h1 {
 
     border-radius: 10px;
 
-    box-shadow:
-        0 3px 10px rgba(0,0,0,0.12);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.12);
 }
-
 
 .form-grid {
 
     display: grid;
 
     grid-template-columns:
-        repeat(auto-fit, minmax(200px, 1fr));
+    repeat(auto-fit, minmax(200px, 1fr));
 
     gap: 15px;
 }
-
 
 .form-group {
 
@@ -388,14 +313,12 @@ h1 {
     flex-direction: column;
 }
 
-
 label {
 
     font-weight: bold;
 
     margin-bottom: 6px;
 }
-
 
 input {
 
@@ -407,7 +330,6 @@ input {
 
     font-size: 15px;
 }
-
 
 button,
 .btn {
@@ -427,7 +349,6 @@ button,
     font-size: 14px;
 }
 
-
 .save {
 
     background: #198754;
@@ -436,7 +357,6 @@ button,
 
     margin-top: 20px;
 }
-
 
 .cancel {
 
@@ -447,14 +367,12 @@ button,
     margin-top: 20px;
 }
 
-
 .edit {
 
     background: #0d6efd;
 
     color: white;
 }
-
 
 .delete {
 
@@ -463,12 +381,10 @@ button,
     color: white;
 }
 
-
 .table-container {
 
     overflow-x: auto;
 }
-
 
 table {
 
@@ -478,7 +394,6 @@ table {
 
     border-collapse: collapse;
 }
-
 
 th,
 td {
@@ -490,7 +405,6 @@ td {
     text-align: center;
 }
 
-
 th {
 
     background: #1d3557;
@@ -498,12 +412,10 @@ th {
     color: white;
 }
 
-
 tr:nth-child(even) {
 
     background: #f8f9fa;
 }
-
 
 .total {
 
@@ -511,7 +423,6 @@ tr:nth-child(even) {
 
     color: green;
 }
-
 
 .note {
 
@@ -523,7 +434,6 @@ tr:nth-child(even) {
 
     border-radius: 5px;
 }
-
 
 .message {
 
@@ -540,10 +450,14 @@ tr:nth-child(even) {
     font-weight: bold;
 }
 
-
 .action-cell {
 
     white-space: nowrap;
+}
+
+.delete-form {
+
+    display: inline;
 }
 
 </style>
@@ -564,11 +478,11 @@ tr:nth-child(even) {
 
 if ($message != "") {
 
-    echo "<div class='message'>";
+    echo '<div class="message">';
 
     echo htmlspecialchars($message);
 
-    echo "</div>";
+    echo '</div>';
 }
 
 ?>
@@ -594,13 +508,17 @@ Basic Pay × HRA % / 100
 <br>
 
 Total Payment =
-DA Amount + HRA Amount
-- PF Deduction + Other Allowance
+DA Amount + HRA Amount - PF Deduction + Other Allowance
 
 </div>
 
 
-<form method="POST" action="">
+<!-- =====================================================
+     ADD / UPDATE FORM
+====================================================== -->
+
+
+<form method="POST" action="/">
 
 
 <input
@@ -610,7 +528,7 @@ DA Amount + HRA Amount
 
         if ($edit) {
 
-            echo $edit["id"];
+            echo intval($edit["id"]);
         }
 
     ?>"
@@ -637,7 +555,8 @@ DA Amount + HRA Amount
         if ($edit) {
 
             echo htmlspecialchars(
-                $edit["Employee_name"]
+                $edit["Employee_name"],
+                ENT_QUOTES
             );
         }
 
@@ -806,6 +725,8 @@ Update Employee
 </button>
 
 
+<!-- IMPORTANT: root URL -->
+
 <a
     href="/"
     class="btn cancel"
@@ -843,13 +764,14 @@ Add Employee
 
 </form>
 
+
 </div>
 
 
-
 <!-- =====================================================
-     EMPLOYEE RECORDS
+     EMPLOYEE TABLE
 ====================================================== -->
+
 
 <div class="card">
 
@@ -934,7 +856,7 @@ echo htmlspecialchars(
 
 <?php
 
-echo $row["id"];
+echo intval($row["id"]);
 
 ?>
 
@@ -1056,10 +978,16 @@ echo number_format(
 <td class="action-cell">
 
 
-<!-- EDIT -->
+<!-- =================================================
+     EDIT BUTTON
+
+     IMPORTANT:
+     USE ROOT URL /?edit=
+================================================== -->
+
 
 <a
-    href="?edit=<?php
+    href="/?edit=<?php
         echo intval($row["id"]);
     ?>"
     class="btn edit"
@@ -1070,12 +998,18 @@ Edit
 </a>
 
 
-<!-- DELETE -->
+<!-- =================================================
+     DELETE BUTTON
+
+     IMPORTANT:
+     POST TO ROOT /
+================================================== -->
+
 
 <form
     method="POST"
-    action=""
-    style="display:inline;"
+    action="/"
+    class="delete-form"
 >
 
 
@@ -1148,7 +1082,9 @@ No employee records found.
 
 </div>
 
+
 </div>
+
 
 </body>
 
